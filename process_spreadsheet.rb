@@ -2,8 +2,8 @@ require 'roo'
 require 'pp'
 
 TBLNAME = 'tbCMDBApplication'
-PRIMARY = 8
-SECONDARY = 9
+COLUMNS = [8,9]
+RGXID = /\{(?<guid>[A-Za-z0-9-]*)\}/
 
 def create_sql_update(cols,id)
   ary = ["UPDATE #{TBLNAME}"]
@@ -21,21 +21,20 @@ puts "Found #{worksheets.count} worksheets:"
 puts worksheets,'-'*70
 
 num_rows = 0
-pri = nil
-sec = nil
+col_names = nil
 workbook.sheet(TBLNAME).each_row_streaming do |row|
   row_cells = row.map { |cell| cell.value }
 
   if num_rows == 0
-    # pp row_cells;break
-    pri = row_cells[PRIMARY]
-    sec = row_cells[SECONDARY]
+    col_names = row_cells
+    pp col_names
   else
     cols = {}
-    cols[pri] = row_cells[PRIMARY].nil? ? '' : row_cells[PRIMARY]
-    cols[sec] = row_cells[SECONDARY].nil? ? '' : row_cells[SECONDARY]
-    id = /\{(?<guid>[A-Za-z0-9-]*)\}/.match(row_cells[0])
-    puts create_sql_update(cols,id[:guid]) unless num_rows == 0
+    COLUMNS.each {|col|
+      cols[col_names[col]] = row_cells[col].nil? ? '' : row_cells[col]
+    }
+    id = RGXID.match(row_cells[0])
+    puts create_sql_update(cols,id[:guid])
   end
   num_rows += 1
 
